@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.pnpm-store/
+npm-debug.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+.env
+.env.*
+!.env.example
+.git/
+.gitignore
+.DS_Store
+README.md

@@ -1,0 +1,36 @@
+FROM python:3.13-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DJANGO_SETTINGS_MODULE=core.settings
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+# Collect static assets for WhiteNoise. Uses a throwaway SECRET_KEY because
+# this step only needs Django to import settings; nothing is persisted.
+RUN DJANGO_SECRET_KEY=build-only DJANGO_DEBUG=False \
+    DJANGO_ALLOWED_HOSTS=localhost \
+    python manage.py collectstatic --noinput
+
+RUN useradd --system --uid 1001 --home /app appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
+ENV PORT=8080
+EXPOSE 8080
+
+# Cloud Run injects PORT. gunicorn binds to 0.0.0.0:$PORT.
+# Migrations run on container start; safe because each revision is migrated once
+# per deploy and Django migrations are idempotent.
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"]
