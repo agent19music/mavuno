@@ -3,13 +3,12 @@ import {
   FileText,
   House,
   UserCircle,
-  type Icon,
 } from "@phosphor-icons/react/dist/ssr";
 
 export type AppNavItem = {
   href: string;
   label: string;
-  icon: Icon;
+  icon: typeof House;
 };
 
 export const appNavItems: AppNavItem[] = [
