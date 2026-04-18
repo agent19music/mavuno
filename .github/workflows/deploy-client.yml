@@ -21,29 +21,45 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SERVICE: mavuno-client
+      WIF_PROVIDER: ${{ vars.WIF_PROVIDER || secrets.WIF_PROVIDER }}
+      DEPLOYER_SA: ${{ vars.DEPLOYER_SA || secrets.DEPLOYER_SA }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION || secrets.GCP_REGION }}
+      GCP_AR_REPO: ${{ vars.GCP_AR_REPO || secrets.GCP_AR_REPO }}
+      RUNTIME_SA: ${{ vars.RUNTIME_SA || secrets.RUNTIME_SA }}
+      SERVER_URL: ${{ vars.SERVER_URL || secrets.SERVER_URL }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Auth preflight
+        run: |
+          [ -n "${WIF_PROVIDER}" ] || (echo "::error::Missing WIF_PROVIDER (set as Variable or Secret)." && exit 1)
+          [ -n "${DEPLOYER_SA}" ] || (echo "::error::Missing DEPLOYER_SA (set as Variable or Secret)." && exit 1)
+          [ -n "${GCP_REGION}" ] || (echo "::error::Missing GCP_REGION (set as Variable or Secret)." && exit 1)
+          [ -n "${GCP_PROJECT_ID}" ] || (echo "::error::Missing GCP_PROJECT_ID (set as Variable or Secret)." && exit 1)
+          [ -n "${GCP_AR_REPO}" ] || (echo "::error::Missing GCP_AR_REPO (set as Variable or Secret)." && exit 1)
+          [ -n "${RUNTIME_SA}" ] || (echo "::error::Missing RUNTIME_SA (set as Variable or Secret)." && exit 1)
 
       - id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.DEPLOYER_SA }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
 
       - uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker auth
-        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
 
       - name: Build & push image
         id: build
         env:
-          API_URL: ${{ vars.SERVER_URL }}
+          API_URL: ${{ env.SERVER_URL }}
         run: |
           if [ -z "$API_URL" ]; then
-            echo "::warning::vars.SERVER_URL is not set — the client bundle will have an empty NEXT_PUBLIC_API_URL. Set it to the deployed Cloud Run server URL and redeploy."
+            echo "::warning::SERVER_URL is not set — the client bundle will have an empty NEXT_PUBLIC_API_URL. Set it as a Variable or Secret and redeploy."
           fi
-          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_AR_REPO }}/${SERVICE}:${{ github.sha }}"
+          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_AR_REPO }}/${SERVICE}:${{ github.sha }}"
           docker build \
             --build-arg NEXT_PUBLIC_API_URL="$API_URL" \
             -f client/Dockerfile.prod \
@@ -57,9 +73,9 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE }}
-          region: ${{ vars.GCP_REGION }}
+          region: ${{ env.GCP_REGION }}
           image: ${{ steps.build.outputs.image }}
-          service_account: ${{ vars.RUNTIME_SA }}
+          service_account: ${{ env.RUNTIME_SA }}
           flags: >-
             --allow-unauthenticated
             --cpu=1 --memory=512Mi --min-instances=0 --max-instances=3
