@@ -33,6 +33,24 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+class AgentCreateSerializer(serializers.ModelSerializer):
+    """Admin-only: create a field agent user."""
+
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = User
+        fields = ("username", "email", "password", "first_name", "last_name")
+
+    def create(self, validated_data):
+        validated_data["role"] = User.Role.AGENT
+        password = validated_data.pop("password")
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -57,7 +75,9 @@ class FieldSerializer(serializers.ModelSerializer):
         many=True,
         queryset=User.objects.filter(role=User.Role.AGENT),
         required=False,
+        write_only=True,
     )
+    assigned_agents = UserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Field
@@ -70,10 +90,11 @@ class FieldSerializer(serializers.ModelSerializer):
             "status",
             "notes",
             "assigned_agent_ids",
+            "assigned_agents",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("created_at", "updated_at", "status")
+        read_only_fields = ("created_at", "updated_at", "status", "assigned_agents")
 
     def validate_current_stage(self, value):
         if self.instance and not self.instance.can_transition_to(value):
@@ -104,11 +125,12 @@ class FieldAgentUpdateSerializer(serializers.ModelSerializer):
 
 class FieldUpdateSerializer(serializers.ModelSerializer):
     agent = UserSerializer(read_only=True)
+    field_name = serializers.CharField(source="field.name", read_only=True)
 
     class Meta:
         model = FieldUpdate
-        fields = ("id", "field", "stage", "notes", "agent", "timestamp")
-        read_only_fields = ("id", "timestamp", "agent")
+        fields = ("id", "field", "field_name", "stage", "notes", "agent", "timestamp")
+        read_only_fields = ("id", "timestamp", "agent", "field_name")
 
 
 class AdminDashboardSerializer(serializers.Serializer):

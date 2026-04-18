@@ -19,7 +19,8 @@ node_modules/
 .pnpm-debug.log*
 npm-debug.log*
 client/.env
-DESIGN.md
+.cursor/
+client/DESIGN.md
 # IDE
 .vscode/
 .idea/

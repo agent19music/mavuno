@@ -1,20 +1,25 @@
 from datetime import timedelta
 
-from django.contrib.auth import login, logout
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from .cookies import REFRESH_COOKIE_NAME, delete_refresh_cookie, set_refresh_cookie
 from .models import Field, FieldUpdate
 from .permissions import CanViewField, CanViewFieldUpdates, IsAdminUserRole
 from .serializers import (
     AdminDashboardSerializer,
+    AgentCreateSerializer,
     AgentDashboardSerializer,
     FieldAgentUpdateSerializer,
     FieldSerializer,
@@ -38,18 +43,68 @@ class LoginView(APIView):
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            # Distinguish "missing/malformed input" (400) from "credentials don't
+            # match" (401). DRF puts our credential error under `non_field_errors`;
+            # surface it as a standard `{"detail": "..."}` 401 so clients can show
+            # a clean "Wrong email or password." message.
+            non_field = serializer.errors.get("non_field_errors")
+            if non_field:
+                return Response(
+                    {"detail": "Wrong email or password."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         user = serializer.validated_data["user"]
-        login(request, user)
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        refresh = RefreshToken.for_user(user)
+        response = Response(
+            {"access": str(refresh.access_token), "user": UserSerializer(user).data},
+            status=status.HTTP_200_OK,
+        )
+        set_refresh_cookie(response, str(refresh))
+        return response
+
+
+class RefreshView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_str = request.COOKIES.get(REFRESH_COOKIE_NAME)
+        if not refresh_str:
+            return Response(
+                {"detail": "No refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        serializer = TokenRefreshSerializer(data={"refresh": refresh_str})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return Response(
+                {"detail": "Invalid refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        data = serializer.validated_data
+        response = Response({"access": data["access"]})
+        if "refresh" in data:
+            set_refresh_cookie(response, data["refresh"])
+        return response
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        logout(request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        refresh_str = request.COOKIES.get(REFRESH_COOKIE_NAME)
+        if refresh_str:
+            try:
+                token = RefreshToken(refresh_str)
+                token.blacklist()
+            except TokenError:
+                pass
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        delete_refresh_cookie(response)
+        return response
 
 
 class RegisterView(APIView):
@@ -77,6 +132,20 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class AgentListCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def get(self, request):
+        agents = User.objects.filter(role=User.Role.AGENT).order_by("username")
+        return Response(UserSerializer(agents, many=True).data)
+
+    def post(self, request):
+        serializer = AgentCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
 class FieldListCreateView(APIView):
@@ -134,6 +203,13 @@ class FieldDetailView(APIView):
 
         return Response(FieldSerializer(field).data)
 
+    def delete(self, request, pk):
+        if not request.user.is_admin:
+            return Response({"detail": "Admin role required."}, status=status.HTTP_403_FORBIDDEN)
+        field = get_object_or_404(Field.objects.prefetch_related("assigned_agents"), pk=pk)
+        field.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class FieldUpdatesView(APIView):
     permission_classes = [IsAuthenticated, CanViewFieldUpdates]
@@ -143,6 +219,22 @@ class FieldUpdatesView(APIView):
         self.check_object_permissions(request, field)
         updates = field.updates.select_related("agent").all()
         serializer = FieldUpdateSerializer(updates, many=True)
+        return Response(serializer.data)
+
+
+class UpdatesFeedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            limit = int(request.query_params.get("limit", 20))
+        except ValueError:
+            limit = 20
+        limit = max(1, min(limit, 100))
+        qs = FieldUpdate.objects.select_related("agent", "field").order_by("-timestamp")
+        if not request.user.is_admin:
+            qs = qs.filter(agent=request.user)
+        serializer = FieldUpdateSerializer(qs[:limit], many=True)
         return Response(serializer.data)
 
 

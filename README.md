@@ -14,6 +14,8 @@ docker compose up --build
 
 Hot reload works via bind mounts. Only rebuild when dependencies change.
 
+The client uses a named volume for `node_modules`. On dependency changes, the dev container runs `pnpm install --frozen-lockfile` on startup ([`client/docker-entrypoint-dev.sh`](client/docker-entrypoint-dev.sh)) so the volume stays in sync. If anything still looks stale, run `docker compose down -v` once, then `docker compose up --build`.
+
 ### Common commands
 
 ```bash
@@ -21,9 +23,36 @@ docker compose logs -f client
 docker compose logs -f server
 docker compose exec server python manage.py makemigrations
 docker compose exec server python manage.py migrate
+docker compose exec server python manage.py seed_demo
 docker compose exec server python manage.py createsuperuser
 docker compose exec client pnpm add <pkg>
 ```
+
+### SmartSeason Field Monitoring (assessment)
+
+**Roles:** Admin (coordinator) and Field Agent. **Auth:** JWT access token in memory + refresh token in `httpOnly` cookie (`mavuno_refresh`, path `/`) so the Next.js app and API can share localhost across ports and middleware can gate `/admin/*` and `/agent/*`.
+
+**Design decisions (short):**
+
+- **JWT vs session:** SimpleJWT with refresh rotation + blacklist fits a SPA talking to a separate API origin; no CSRF on API routes (access token is not auto-sent by the browser).
+- **Field ↔ agents:** Many-to-many; admins assign multiple agents per field.
+- **No public signup:** First `POST /api/auth/register` bootstraps an admin; further users are created by admins (`POST /api/agents` or register while authenticated as admin).
+
+**Computed field status (`active` / `at_risk` / `completed`):**
+
+- `completed` if stage is `harvested`.
+- `at_risk` if the latest `FieldUpdate` is older than 7 days, or update history shows out-of-order stages.
+- otherwise `active`.
+
+**Demo credentials** (after `seed_demo`):
+
+| Role  | Email                 | Password      |
+|-------|----------------------|---------------|
+| Admin | admin@mavuno.local   | Password123!  |
+| Agent | anne@mavuno.local    | Password123!  |
+| Agent | juma@mavuno.local    | Password123!  |
+
+**UI routes:** `/admin/...` and `/agent/...` (role layouts redirect if wrong role).
 
 ### How they talk to each other locally
 

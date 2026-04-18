@@ -4,14 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { appNavItems } from "@/components/app-shell/nav-items";
+import { navItemsForRole } from "@/components/app-shell/nav-items";
+import { useAuth } from "@/lib/auth-context";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const appNavItems = navItemsForRole(user?.role ?? null);
+  const home = user?.role === "agent" ? "/agent/dashboard" : "/admin/dashboard";
 
   return (
     <aside className="hidden w-72 shrink-0 border-r border-black/[.08] bg-surface px-6 py-8 dark:border-white/[.08] md:block">
-      <Link href="/dashboard" className="mb-8 flex items-center gap-3 px-2">
+      <Link href={home} className="mb-8 flex items-center gap-3 px-2">
         <Image
           src="/assets/mavuno-logo-light-nobg.webp"
           alt="Mavuno logo"
