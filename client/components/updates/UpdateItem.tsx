@@ -7,8 +7,8 @@ export function UpdateItem({ update }: { update: FieldUpdate }) {
   const agent = getAgentById(update.agentId);
 
   return (
-    <article className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-      <div className="mb-2 flex items-center justify-between gap-4">
+    <article className="rounded-lg border border-black/[.08] bg-inset-surface p-4 dark:border-white/[.08]">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <div className="flex items-center gap-2">
           <FieldStageBadge stage={update.stage} />
           <span className="text-sm font-medium">{field?.name}</span>

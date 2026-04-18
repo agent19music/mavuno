@@ -5,12 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --surface: #fafafa;
+  /* Layered light surfaces — see DESIGN.md §14.1 */
+  --surface: oklch(0.985 0 0);        /* L1  #fafafa — cards, sidebar, topbar, bottom nav */
+  --inset-surface: oklch(0.945 0 0);  /* Inset #f0f0f0 — wells inside L1 */
   --foreground-muted: #52525b;
   --foreground-subtle: #a1a1aa;
-  --border: oklch(0.922 0 0);
-  --border-strong: #e4e4e7;
-  --hover-surface: rgba(0, 0, 0, 0.04);
+  --border: rgba(0, 0, 0, 0.08);      /* hairline */
+  --border-strong: oklch(0.917 0 0);  /*       #e8e8e8 — explicit dividers */
+  --hover-surface: oklch(0.945 0 0);  /*       #f0f0f0 — hover wash on L1 */
   /* Brand accents (use sparingly) */
   --brand-cream: #f8f3e1;
   --brand-olive: #41431b;
@@ -41,11 +43,11 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --background: oklch(1 0 0);
+  --background: oklch(0.961 0 0);     /* L0  #f5f5f5 — page background (marketing/auth) */
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  --card: #fcfcfc;                    /* Card — sits one step ABOVE L1 in light mode so it lifts off the plane and clearly above inset wells. Hex literal (not oklch) to avoid wide-gamut warm drift on color-managed browsers. Paired with --shadow-xs. */
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
+  --popover: oklch(0.985 0 0);        /* L2  #fafafa (paired with --shadow-md for lift) */
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
@@ -64,7 +66,7 @@
   --chart-4: oklch(0.556 0 0);
   --chart-5: oklch(0.371 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: oklch(0.985 0 0);        /* L1  #fafafa */
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -83,6 +85,7 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-hover-surface: var(--hover-surface);
+  --color-inset-surface: var(--inset-surface);
   --color-brand-cream: var(--brand-cream);
   --color-brand-olive: var(--brand-olive);
   --color-brand-sand: var(--brand-sand);
@@ -129,17 +132,13 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: #000000;
-    --foreground-muted: #a1a1aa;
-    --foreground-subtle: #52525b;
-    --border: rgba(255, 255, 255, 0.145);
-    --border-strong: #27272a;
-    --hover-surface: #1a1a1a;
-    --state-risk: #e3dbbb;
-  }
-}
+/*
+ * NOTE: dark mode is controlled exclusively by the `.dark` class on <html>.
+ * A pre-hydration inline script in app/layout.tsx applies `.dark` based on
+ * stored preference + prefers-color-scheme to avoid FOUC. We deliberately do
+ * NOT use a `prefers-color-scheme: dark` media query here, because it would
+ * override the user's explicit toggle whenever their OS prefers dark.
+ */
 
 body {
   font-family:
@@ -179,36 +178,43 @@ body {
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  /* Layered dark surfaces — see DESIGN.md §14.1 */
+  --background: oklch(0.182 0 0);     /* L0  #1a1a1a — page background */
+  --surface: oklch(0.275 0 0);        /* L1  #2d2d2d — cards, sidebar, topbar, bottom nav */
+  --inset-surface: oklch(0.245 0 0);  /* Inset #252525 — wells inside L1 (avatars, badges, list items) */
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --foreground-muted: #a1a1aa;
+  --foreground-subtle: #52525b;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: oklch(0.385 0 0);  /*       #4a4a4a — explicit dividers */
+  --hover-surface: oklch(0.325 0 0);  /* L2    #3a3a3a — hover wash on L1 */
+  --card: #2a2a2a;                    /* Card — one step BENEATH L1 in dark mode (settled in), paired with --shadow-xs. Hex literal for parity with light token. */
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.325 0 0);        /* L2    #3a3a3a — popovers, modals, command palette */
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --secondary: oklch(0.275 0 0);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: oklch(0.275 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: oklch(0.325 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.556 0 0);
   --chart-1: #e3dbbb;
   --chart-2: #aeb784;
   --chart-3: #f8f3e1;
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.275 0 0);        /* L1 */
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: oklch(0.325 0 0); /* L2 */
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: oklch(0.556 0 0);
 }
 

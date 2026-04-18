@@ -11,8 +11,8 @@ export function FieldTimeline({ updates }: { updates: FieldUpdate[] }) {
         {updates.map((update) => {
           const agent = getAgentById(update.agentId);
           return (
-            <div key={update.id} className="rounded-lg border border-black/[.08] p-4 dark:border-white/[.145]">
-              <div className="mb-2 flex items-center justify-between">
+            <div key={update.id} className="rounded-lg border border-black/[.08] bg-inset-surface p-4 dark:border-white/[.08]">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                 <FieldStageBadge stage={update.stage} />
                 <span className="text-xs text-zinc-500 dark:text-zinc-400">{update.timestamp}</span>
               </div>

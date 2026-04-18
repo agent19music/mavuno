@@ -11,9 +11,9 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary:
     "bg-foreground text-background hover:bg-[#383838] dark:hover:bg-[#ccc] border border-transparent",
   secondary:
-    "border border-solid border-black/[.08] hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]",
+    "border border-solid border-black/[.08] hover:border-transparent hover:bg-hover-surface dark:border-white/[.08]",
   ghost:
-    "border border-transparent text-foreground hover:bg-black/[.04] dark:hover:bg-[#1a1a1a]",
+    "border border-transparent text-foreground hover:bg-hover-surface",
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
