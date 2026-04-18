@@ -9,13 +9,15 @@ export default function DashboardPage() {
   const updates = getRecentUpdates(5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">Farm operations overview with muted analytics.</p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 sm:text-base">
+          Farm operations overview with muted analytics.
+        </p>
       </div>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card><CardTitle className="text-sm">Fields</CardTitle><p className="mt-2 text-3xl font-semibold">{stats.totalFields}</p></Card>
         <Card><CardTitle className="text-sm">Agents</CardTitle><p className="mt-2 text-3xl font-semibold">{stats.totalAgents}</p></Card>
         <Card><CardTitle className="text-sm">Updates (week)</CardTitle><p className="mt-2 text-3xl font-semibold">{stats.updatesThisWeek}</p></Card>

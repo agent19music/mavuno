@@ -17,14 +17,16 @@ export default async function FieldDetailPage({
   const agent = field.assignedAgentId ? getAgentById(field.assignedAgentId) : null;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-xl border border-black/[.08] bg-white p-6 dark:border-white/[.145] dark:bg-black">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="space-y-5 sm:space-y-6">
+      <section className="rounded-xl border border-black/[.08] bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-white/[.08] dark:shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{field.name}</h1>
-            <p className="mt-2 text-zinc-600 dark:text-zinc-400">{field.cropType} · planted {field.plantingDate}</p>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{field.name}</h1>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 sm:text-base">
+              {field.cropType} · planted {field.plantingDate}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <FieldStageBadge stage={field.currentStage} />
             <FieldStatusPill status={field.status} />
           </div>

@@ -12,7 +12,7 @@ export function AuthCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="p-8">
+    <Card className="p-6 sm:p-8">
       <div className="mb-5">
         <Image
           src="/assets/mavuno-logo-light-nobg.webp"

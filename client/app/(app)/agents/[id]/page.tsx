@@ -17,7 +17,7 @@ export default async function AgentDetailPage({
   const updates = getUpdatesForAgent(id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <Card className="flex items-center gap-4">
         <Avatar name={agent.fullName} className="size-14 text-base" />
         <div>
@@ -27,7 +27,7 @@ export default async function AgentDetailPage({
       </Card>
 
       <section>
-        <h2 className="mb-4 text-xl font-semibold tracking-tight">Assigned fields</h2>
+        <h2 className="mb-4 text-lg font-semibold tracking-tight sm:text-xl">Assigned fields</h2>
         <FieldList fields={assignedFields} />
       </section>
 

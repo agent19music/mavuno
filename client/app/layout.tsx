@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 
@@ -19,6 +19,29 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#2d2d2d" },
+  ],
+};
+
+// Runs before hydration so OS-dark users don't see a flash of light tokens.
+// Stored preference wins over OS preference.
+const themeInitScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem('mavuno-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = stored ? stored === 'dark' : prefersDark;
+    document.documentElement.classList.toggle('dark', isDark);
+  } catch (_) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,6 +49,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`h-full antialiased ${manrope.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

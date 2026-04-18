@@ -5,8 +5,8 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="flex flex-1 flex-col items-center justify-center bg-background font-sans">
+      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-surface px-6 py-16 sm:items-start sm:px-16 sm:py-32">
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
           <div className="flex items-center gap-4">
             <h1 className="text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
@@ -54,7 +54,7 @@ export default function Home() {
             Login UI
           </Link>
           <Link
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-hover-surface dark:border-white/[.08] md:w-[158px]"
             href="/dashboard"
           >
             Open App

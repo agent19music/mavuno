@@ -9,7 +9,7 @@ export function AgentCard({ agent }: { agent: User }) {
 
   return (
     <Link href={`/agents/${agent.id}`} className="block">
-      <Card className="transition-all duration-[200ms] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+      <Card className="transition-all duration-[200ms] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
         <div className="mb-4 flex items-center gap-3">
           <Avatar name={agent.fullName} />
           <div>

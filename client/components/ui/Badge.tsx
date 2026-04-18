@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 type BadgeTone = "neutral" | "active" | "risk";
 
 const toneClasses: Record<BadgeTone, string> = {
-  neutral: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
+  neutral: "bg-inset-surface text-zinc-700 dark:text-zinc-300",
   active:
     "bg-[var(--brand-sand)] text-[var(--brand-olive)] dark:bg-[var(--brand-olive)] dark:text-[var(--brand-cream)]",
   risk:
