@@ -1,46 +1,51 @@
 export type Role = "admin" | "agent";
 
-export type FieldStage =
-  | "planted"
-  | "germination"
-  | "vegetative"
-  | "flowering"
-  | "fruiting"
-  | "harvest"
-  | "dormant";
+export type FieldStage = "planted" | "growing" | "ready" | "harvested";
 
-export type FieldStatus = "active" | "at-risk" | "archived";
+export type FieldStatus = "active" | "at_risk" | "completed";
 
-export interface User {
-  id: string;
+export interface ApiUser {
+  id: number;
   username: string;
   email: string;
-  fullName: string;
+  first_name: string;
+  last_name: string;
   role: Role;
-  avatarUrl?: string;
-  assignedFieldIds: string[];
-  dateJoined: string;
 }
 
 export interface Field {
-  id: string;
+  id: number;
   name: string;
-  cropType: string;
-  plantingDate: string;
-  currentStage: FieldStage;
+  crop_type: string;
+  planting_date: string;
+  current_stage: FieldStage;
   status: FieldStatus;
-  assignedAgentId: string | null;
   notes: string;
-  createdAt: string;
-  sizeHectares?: number;
-  locationLabel?: string;
+  /** Present on writes; on reads prefer `assigned_agents` + `fieldAgentIds()`. */
+  assigned_agent_ids?: number[];
+  assigned_agents?: ApiUser[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FieldUpdate {
-  id: string;
-  fieldId: string;
+  id: number;
+  field: number;
+  field_name: string;
   stage: FieldStage;
   notes: string;
-  agentId: string;
+  agent: ApiUser;
   timestamp: string;
+}
+
+export function displayUserName(user: Pick<ApiUser, "first_name" | "last_name" | "username">) {
+  const full = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
+  return full || user.username;
+}
+
+export function fieldAgentIds(field: Field): number[] {
+  if (field.assigned_agents?.length) {
+    return field.assigned_agents.map((a) => a.id);
+  }
+  return field.assigned_agent_ids ?? [];
 }

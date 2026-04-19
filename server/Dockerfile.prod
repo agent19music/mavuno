@@ -31,6 +31,9 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Cloud Run injects PORT. gunicorn binds to 0.0.0.0:$PORT.
-# Migrations run on container start; safe because each revision is migrated once
-# per deploy and Django migrations are idempotent.
-CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"]
+# Migrations + admin bootstrap run on container start; both are idempotent:
+#   - migrate --noinput: Django migrations are tracked in django_migrations.
+#   - ensure_admin: no-op if MAVUNO_ADMIN_EMAIL/MAVUNO_ADMIN_PASSWORD unset,
+#     creates the admin if missing, leaves an existing admin's password alone
+#     (use --reset-password as a one-off for recovery).
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py ensure_admin && exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"]

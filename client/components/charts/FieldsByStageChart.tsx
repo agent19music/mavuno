@@ -1,7 +1,6 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
-import { getFieldsByStageChartData } from "@/lib/mock-helpers";
 import {
   ChartContainer,
   ChartTooltip,
@@ -16,9 +15,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function FieldsByStageChart() {
-  const data = getFieldsByStageChartData();
-
+export function FieldsByStageChart({
+  data,
+}: {
+  data: { stage: string; total: number }[];
+}) {
   return (
     <ChartContainer config={chartConfig} className="h-[260px] w-full">
       <BarChart data={data}>

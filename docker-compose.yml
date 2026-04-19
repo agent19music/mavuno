@@ -22,7 +22,9 @@ services:
       - ./client:/app
       - client_node_modules:/app/node_modules
       - client_next:/app/.next
+    command: ["/bin/sh", "/app/docker-entrypoint-dev.sh"]
     environment:
+      CI: "true"
       NEXT_PUBLIC_API_URL: "http://localhost:8000"
       API_URL_INTERNAL: "http://server:8000"
       WATCHPACK_POLLING: "true"

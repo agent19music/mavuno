@@ -55,7 +55,7 @@ export default function Home() {
           </Link>
           <Link
             className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-hover-surface dark:border-white/[.08] md:w-[158px]"
-            href="/dashboard"
+            href="/admin/dashboard"
           >
             Open App
           </Link>
