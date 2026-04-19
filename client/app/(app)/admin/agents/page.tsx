@@ -7,6 +7,7 @@ import { AppModal } from "@/components/ui/AppModal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { api } from "@/lib/api";
 import type { ApiUser } from "@/types/models";
 import type { Field } from "@/types/models";
@@ -124,11 +125,11 @@ export default function AdminAgentsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="pw">Temporary password</Label>
-              <Input
+              <PasswordInput
                 id="pw"
-                type="password"
                 required
                 minLength={8}
+                autoComplete="new-password"
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               />
