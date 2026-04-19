@@ -1,6 +1,10 @@
 from datetime import timedelta
+from io import StringIO
+from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
+from django.test import TestCase
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -347,3 +351,70 @@ class DashboardTests(APITestCase):
         response = self.client.get("/api/dashboard/agent")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["assigned_fields"], 1)
+
+
+class EnsureAdminCommandTests(TestCase):
+    """`ensure_admin` is wired into the prod CMD and runs on every container start."""
+
+    BASE_ENV = {
+        "MAVUNO_ADMIN_EMAIL": "ops@example.com",
+        "MAVUNO_ADMIN_PASSWORD": "S3cretPassw0rd!",
+        "MAVUNO_ADMIN_USERNAME": "ops",
+    }
+
+    def _run(self, env=None):
+        out = StringIO()
+        with mock.patch.dict("os.environ", env or self.BASE_ENV, clear=False):
+            call_command("ensure_admin", stdout=out)
+        return out.getvalue()
+
+    def test_no_op_when_env_vars_missing(self):
+        with mock.patch.dict("os.environ", {}, clear=True):
+            out = StringIO()
+            call_command("ensure_admin", stdout=out)
+        self.assertEqual(User.objects.count(), 0)
+        self.assertIn("skipping", out.getvalue())
+
+    def test_creates_admin_when_missing(self):
+        self._run()
+        u = User.objects.get(email="ops@example.com")
+        self.assertEqual(u.role, User.Role.ADMIN)
+        self.assertTrue(u.check_password("S3cretPassw0rd!"))
+
+    def test_idempotent_does_not_overwrite_existing_password(self):
+        self._run()
+        u = User.objects.get(email="ops@example.com")
+        u.set_password("user-rotated-this-via-ui")
+        u.save()
+        self._run()  # second boot
+        u.refresh_from_db()
+        self.assertTrue(u.check_password("user-rotated-this-via-ui"))
+        self.assertFalse(u.check_password("S3cretPassw0rd!"))
+
+    def test_reset_password_flag_overrides_existing_password(self):
+        self._run()
+        u = User.objects.get(email="ops@example.com")
+        u.set_password("temporary")
+        u.save()
+        out = StringIO()
+        with mock.patch.dict("os.environ", self.BASE_ENV, clear=False):
+            call_command("ensure_admin", "--reset-password", stdout=out)
+        u.refresh_from_db()
+        self.assertTrue(u.check_password("S3cretPassw0rd!"))
+
+    def test_promotes_existing_non_admin_user(self):
+        User.objects.create_user(
+            username="ops",
+            email="ops@example.com",
+            password="anything",
+            role=User.Role.AGENT,
+        )
+        self._run()
+        u = User.objects.get(email="ops@example.com")
+        self.assertEqual(u.role, User.Role.ADMIN)
+        # Password not changed (existing user, no --reset-password).
+        self.assertTrue(u.check_password("anything"))
+
+    def test_password_never_appears_in_stdout(self):
+        out = self._run()
+        self.assertNotIn("S3cretPassw0rd!", out)

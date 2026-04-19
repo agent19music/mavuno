@@ -81,6 +81,8 @@ jobs:
           secrets: |
             DJANGO_SECRET_KEY=django-secret-key:latest
             DATABASE_URL=database-url:latest
+            MAVUNO_ADMIN_EMAIL=MAVUNO_ADMIN_EMAIL:latest
+            MAVUNO_ADMIN_PASSWORD=MAVUNO_ADMIN_PASSWORD:latest
 
       - name: Show service URL
         run: echo "Deployed ${SERVICE} -> ${{ steps.deploy.outputs.url }}"
