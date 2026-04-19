@@ -2,6 +2,7 @@ from datetime import timedelta
 from io import StringIO
 from unittest import mock
 
+import yaml
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
@@ -12,6 +13,26 @@ from rest_framework.test import APITestCase
 from .models import Field, FieldUpdate
 
 User = get_user_model()
+
+
+class OpenApiDocsTests(APITestCase):
+    def test_schema_swagger_and_redoc_are_public(self):
+        schema = self.client.get("/mavuno/api/schema/")
+        self.assertEqual(schema.status_code, status.HTTP_200_OK)
+        self.assertIn(b"openapi", schema.content.lower())
+        spec = yaml.safe_load(schema.content.decode())
+        paths = spec.get("paths", {})
+        self.assertGreaterEqual(len(paths), 12)
+        self.assertIn("/mavuno/api/auth/login", paths)
+        self.assertIn("/mavuno/api/fields", paths)
+
+        docs = self.client.get("/mavuno/api/docs/")
+        self.assertEqual(docs.status_code, status.HTTP_200_OK)
+        self.assertIn(b"swagger", docs.content.lower())
+
+        redoc = self.client.get("/mavuno/api/redoc/")
+        self.assertEqual(redoc.status_code, status.HTTP_200_OK)
+        self.assertIn(b"redoc", redoc.content.lower())
 
 
 class FieldModelTests(APITestCase):

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "drf_spectacular",
     "rest_framework_simplejwt.token_blacklist",
     "api",
 ]
@@ -147,6 +148,24 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Mavuno API",
+    "DESCRIPTION": "Field monitoring, auth (JWT + refresh cookie), and dashboards.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    # Let anyone open Swagger / ReDoc / schema (Try it out still needs a token for protected routes).
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "TAGS": [
+        {"name": "auth", "description": "Login, refresh, logout, register, current user"},
+        {"name": "fields", "description": "Field CRUD and updates"},
+        {"name": "agents", "description": "Agent users (admin)"},
+        {"name": "dashboard", "description": "Aggregated stats"},
+        {"name": "meta", "description": "Health and schema"},
     ],
 }
 
