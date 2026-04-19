@@ -59,7 +59,7 @@ export default function Home() {
           <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
             Full Stack Developer Technical Assessment
             <br />
-            SmartSeason Field Monitoring System
+            Smart Season Field Monitoring System
             <br />
             Hire{" "}
             <Tooltip
@@ -91,14 +91,9 @@ export default function Home() {
             className="flex h-12 w-full items-center justify-center rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
             href="/login"
           >
-            Login UI
+            Login 
           </Link>
-          <Link
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-hover-surface dark:border-white/[.08] md:w-[158px]"
-            href="/admin/dashboard"
-          >
-            Open App
-          </Link>
+        
         </div>
       </main>
     </div>
