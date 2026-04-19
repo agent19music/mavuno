@@ -22,8 +22,8 @@ export default function Home() {
   }, [isDark]);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-background font-sans">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-surface px-6 py-16 sm:items-start sm:px-16 sm:py-32">
+    <div className="flex h-svh min-h-screen items-center justify-center overflow-hidden bg-background p-4 font-sans sm:p-6">
+      <main className="flex h-[calc(100svh-2rem)] max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col items-center justify-between overflow-hidden rounded-2xl border border-black/[.08] bg-surface px-6 py-16 shadow-[0_8px_24px_rgba(0,0,0,0.03)] sm:h-[calc(100svh-3rem)] sm:max-h-[calc(100vh-3rem)] sm:items-start sm:px-16 sm:py-24 dark:border-white/[.08] dark:shadow-[0_8px_24px_rgba(0,0,0,0.28)]">
         <div className="flex w-full flex-col items-center gap-6 text-center sm:items-start sm:text-left">
           <div className="flex w-full max-w-full items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
@@ -59,7 +59,7 @@ export default function Home() {
           <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
             Full Stack Developer Technical Assessment
             <br />
-            Smart Season Field Monitoring System
+            Field Monitoring System
             <br />
             Hire{" "}
             <Tooltip

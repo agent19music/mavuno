@@ -4,8 +4,8 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-full flex-1 flex-col items-center justify-center bg-background font-sans">
-      <main className="flex w-full max-w-3xl flex-1 flex-col justify-center bg-surface px-6 py-16 sm:px-16 sm:py-32">
+    <div className="flex h-svh min-h-screen items-center justify-center overflow-hidden bg-background p-4 font-sans sm:p-6">
+      <main className="flex h-[calc(100svh-2rem)] max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col justify-center overflow-hidden rounded-2xl border border-black/[.08] bg-surface px-6 py-16 shadow-[0_8px_24px_rgba(0,0,0,0.03)] sm:h-[calc(100svh-3rem)] sm:max-h-[calc(100vh-3rem)] sm:px-16 sm:py-24 dark:border-white/[.08] dark:shadow-[0_8px_24px_rgba(0,0,0,0.28)]">
         <div className="flex flex-col items-center gap-8 text-center sm:items-start sm:text-left">
           <div className="flex w-full flex-row flex-wrap items-end justify-center gap-4 sm:justify-start sm:gap-6">
             <p className="text-[clamp(5rem,22vw,10rem)] font-semibold leading-none tracking-tight text-foreground">

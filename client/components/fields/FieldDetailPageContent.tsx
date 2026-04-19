@@ -233,7 +233,7 @@ export function FieldDetailPageContent({
               {saving ? "Saving…" : "Save changes"}
             </Button>
             {isAdmin && (
-              <Button type="button" variant="secondary" onClick={() => setDeleteOpen(true)}>
+              <Button type="button" variant="destructive" onClick={() => setDeleteOpen(true)}>
                 Delete field
               </Button>
             )}
