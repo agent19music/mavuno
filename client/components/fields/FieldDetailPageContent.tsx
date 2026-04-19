@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
+import { DeleteFieldDialog } from "@/components/fields/DeleteFieldDialog";
 import { FieldStageBadge } from "@/components/fields/FieldStageBadge";
 import { FieldStatusPill } from "@/components/fields/FieldStatusPill";
 import { FieldTimeline } from "@/components/fields/FieldTimeline";
@@ -11,6 +13,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Label } from "@/components/ui/Label";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useNotifications } from "@/lib/useNotifications";
 import { STAGE_OPTIONS, canTransitionTo } from "@/lib/field-stage";
 import {
   displayUserName,
@@ -31,6 +34,7 @@ export function FieldDetailPageContent({
 }) {
   const { user } = useAuth();
   const router = useRouter();
+  const { subscribeFieldRemoval } = useNotifications();
   const [field, setField] = useState<Field | null>(null);
   const [updates, setUpdates] = useState<Awaited<ReturnType<typeof api.fieldUpdates>>>([]);
   const [agents, setAgents] = useState<ApiUser[]>([]);
@@ -39,6 +43,8 @@ export function FieldDetailPageContent({
   const [selectedAgents, setSelectedAgents] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,13 +64,26 @@ export function FieldDetailPageContent({
         setStage(f.current_stage);
         setSelectedAgents(fieldAgentIds(f));
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load field");
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : "Failed to load field";
+        if (/not\s*found/i.test(msg)) {
+          toast.message("This field is no longer available.");
+          router.replace(listHref);
+          return;
+        }
+        setError(msg);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [fieldId, isAdmin]);
+  }, [fieldId, isAdmin, listHref, router]);
+
+  useEffect(() => {
+    return subscribeFieldRemoval(fieldId, () => {
+      router.replace(listHref);
+    });
+  }, [fieldId, listHref, router, subscribeFieldRemoval]);
 
   if (error && !field) {
     return (
@@ -117,13 +136,18 @@ export function FieldDetailPageContent({
   };
 
   const remove = async () => {
-    if (!isAdmin) return;
-    if (!window.confirm("Delete this field? This cannot be undone.")) return;
+    if (!isAdmin || !field) return;
+    setDeleting(true);
+    setError(null);
     try {
       await api.deleteField(field.id);
-      router.push(listHref);
+      toast.success("Field deleted");
+      setDeleteOpen(false);
+      router.replace(listHref);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -153,7 +177,7 @@ export function FieldDetailPageContent({
             <Label htmlFor="stage">Stage</Label>
             <select
               id="stage"
-              className="flex h-12 w-full rounded-lg border border-[var(--border-strong)] bg-inset-surface px-4 text-base text-foreground outline-none ring-foreground/60 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="flex h-12 w-full rounded-lg border border-[var(--border-strong)] bg-inset-surface pl-4 pr-10 text-base text-foreground outline-none ring-foreground/60 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               value={stage}
               onChange={(e) => setStage(e.target.value as FieldStage)}
             >
@@ -209,13 +233,25 @@ export function FieldDetailPageContent({
               {saving ? "Saving…" : "Save changes"}
             </Button>
             {isAdmin && (
-              <Button type="button" variant="secondary" onClick={() => void remove()}>
+              <Button type="button" variant="secondary" onClick={() => setDeleteOpen(true)}>
                 Delete field
               </Button>
             )}
           </div>
         </Card>
       )}
+
+      {isAdmin && field ? (
+        <DeleteFieldDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          fieldName={field.name}
+          updatesCount={updates.length}
+          agentsCount={fieldAgentIds(field).length}
+          onConfirm={() => void remove()}
+          busy={deleting}
+        />
+      ) : null}
 
       {!canEdit && (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">

@@ -13,6 +13,11 @@
 #   - gcloud CLI installed and authenticated as a Project Owner
 #   - openssl installed (for generating random secrets)
 #
+# SSE / long-lived streams (mavuno-server): when deploying Cloud Run, prefer
+#   --cpu-boost --no-cpu-throttling --timeout=3600
+# so `/mavuno/api/events/stream` stays open; default short timeouts throttle CPU
+# and close idle streams.
+#
 # Usage:
 #   GITHUB_REPO="owner/repo" ./scripts/gcp-bootstrap.sh
 

@@ -7,3 +7,4 @@ class ApiConfig(AppConfig):
     def ready(self):
         # Registers OpenApiAuthenticationExtension subclasses for drf-spectacular.
         from . import spectacular_extensions  # noqa: F401
+        from . import signals  # noqa: F401

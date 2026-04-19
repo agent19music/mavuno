@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, MagnifyingGlass, Moon, SignOut, Sun } from "@phosphor-icons/react/dist/ssr";
+import { MagnifyingGlass, Moon, SignOut, Sun } from "@phosphor-icons/react/dist/ssr";
 import { Popover } from "@base-ui/react/popover";
+import { NotificationsBell } from "@/components/app-shell/NotificationsBell";
 import { SearchOverlay } from "@/components/app-shell/SearchOverlay";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -27,6 +28,25 @@ export function Topbar() {
       /* ignore */
     }
   }, [isDark]);
+
+  // Global Cmd/Ctrl+K shortcut. Don't intercept while typing into inputs.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const isShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+      if (!isShortcut) return;
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const editable = target?.isContentEditable;
+      if (!searchOpen && (tag === "INPUT" || tag === "TEXTAREA" || editable)) return;
+      event.preventDefault();
+      setSearchOpen((v) => !v);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [searchOpen]);
+
+  const isMac =
+    typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
   const home = user?.role === "agent" ? "/agent/dashboard" : "/admin/dashboard";
   const displayName = user ? displayUserName(user) : "Guest";
@@ -67,21 +87,22 @@ export function Topbar() {
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="hidden items-center gap-3 rounded-full border border-black/[.08] px-4 py-2 text-sm text-zinc-500 transition-colors hover:bg-hover-surface dark:border-white/[.08] dark:text-zinc-400 md:inline-flex"
+            className="hidden items-center gap-3 rounded-full border border-black/[.08] py-2 pl-4 pr-2 text-sm text-zinc-500 transition-colors hover:bg-hover-surface dark:border-white/[.08] dark:text-zinc-400 md:inline-flex"
+            aria-label="Open search"
           >
             <MagnifyingGlass size={16} />
-            Search fields, agents, updates
+            <span className="pr-2">Search fields, agents, updates</span>
+            <kbd
+              className="ml-1 inline-flex h-6 items-center gap-0.5 rounded-full border border-black/[.08] bg-inset-surface px-2 font-mono text-[10px] text-zinc-500 dark:border-white/[.08] dark:text-zinc-400"
+              aria-hidden
+            >
+              {isMac ? "⌘" : "Ctrl"}K
+            </kbd>
           </button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            className="inline-flex size-11 items-center justify-center rounded-full border border-black/[.08] transition-colors hover:bg-hover-surface dark:border-white/[.08] md:size-10"
-            aria-label="Notifications"
-          >
-            <Bell size={18} />
-          </button>
+          <NotificationsBell />
 
           <Popover.Root>
             <Popover.Trigger

@@ -38,6 +38,19 @@ export interface FieldUpdate {
   timestamp: string;
 }
 
+export type NotificationKind = "field_deleted" | "field_merged_away";
+
+export interface AppNotification {
+  id: number;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  related_field_id: number | null;
+  target_field_id: number | null;
+  is_read: boolean;
+  created_at: string;
+}
+
 export function displayUserName(user: Pick<ApiUser, "first_name" | "last_name" | "username">) {
   const full = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
   return full || user.username;

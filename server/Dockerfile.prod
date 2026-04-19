@@ -36,4 +36,4 @@ EXPOSE 8080
 #   - ensure_admin: no-op if MAVUNO_ADMIN_EMAIL/MAVUNO_ADMIN_PASSWORD unset,
 #     creates the admin if missing, leaves an existing admin's password alone
 #     (use --reset-password as a one-off for recovery).
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py ensure_admin && exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py ensure_admin && exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT} --worker-class gthread --workers 2 --threads 8 --timeout 3600 --access-logfile - --error-logfile -"]

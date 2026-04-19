@@ -1,7 +1,7 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
-from .models import Field, FieldUpdate
+from .models import Field, FieldUpdate, Notification
 
 User = get_user_model()
 
@@ -131,6 +131,58 @@ class FieldUpdateSerializer(serializers.ModelSerializer):
         model = FieldUpdate
         fields = ("id", "field", "field_name", "stage", "notes", "agent", "timestamp")
         read_only_fields = ("id", "timestamp", "agent", "field_name")
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    target_field_id = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = (
+            "id",
+            "kind",
+            "title",
+            "body",
+            "related_field_id",
+            "target_field_id",
+            "is_read",
+            "created_at",
+        )
+        read_only_fields = fields
+
+
+class FieldMergeSerializer(serializers.Serializer):
+    source_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+        min_length=2,
+    )
+    name = serializers.CharField(max_length=200)
+    crop_type = serializers.CharField(max_length=100)
+    planting_date = serializers.DateField()
+    current_stage = serializers.ChoiceField(choices=Field.Stage.choices)
+    notes = serializers.CharField(allow_blank=True, required=False, default="")
+    assigned_agent_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+        default=list,
+    )
+
+    def validate_source_ids(self, value):
+        unique = list(dict.fromkeys(value))
+        if len(unique) < 2:
+            raise serializers.ValidationError("Select at least two distinct fields to merge.")
+        return unique
+
+    def validate_assigned_agent_ids(self, value):
+        return list(dict.fromkeys(value or []))
+
+    def validate(self, attrs):
+        agent_ids = attrs.get("assigned_agent_ids") or []
+        invalid = User.objects.filter(id__in=agent_ids).exclude(role=User.Role.AGENT)
+        if invalid.exists():
+            raise serializers.ValidationError({"assigned_agent_ids": "Only field agents may be assigned."})
+        return attrs
 
 
 class AdminDashboardSerializer(serializers.Serializer):
