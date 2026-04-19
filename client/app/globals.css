@@ -18,6 +18,7 @@
   --brand-olive: #41431b;
   --brand-sand: #e3dbbb;
   --brand-moss: #aeb784;
+  --brand-red: oklch(0.488 0.214 27.3);   /* #C20019 — destructive / delete actions */
   --state-active: var(--brand-moss);
   --state-risk: #7a5a45;
 
@@ -90,6 +91,7 @@
   --color-brand-olive: var(--brand-olive);
   --color-brand-sand: var(--brand-sand);
   --color-brand-moss: var(--brand-moss);
+  --color-brand-red: var(--brand-red);
   --color-state-active: var(--state-active);
   --color-state-risk: var(--state-risk);
   --font-sans: var(--font-sans);

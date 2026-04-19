@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -14,6 +14,12 @@ const variantClasses: Record<ButtonVariant, string> = {
     "border border-solid border-black/[.08] hover:border-transparent hover:bg-hover-surface dark:border-white/[.08]",
   ghost:
     "border border-transparent text-foreground hover:bg-hover-surface",
+  // Color fills on hover use plain `ease` per Emil's decision tree (reserve custom
+  // `--ease-out` curves for enter/exit). Duration inherits the base 200ms — inside
+  // Emil's 150-250ms UI range. Tailwind v4 gates `hover:` behind `@media (hover: hover)`
+  // so touch taps don't leave the button stuck in the filled state.
+  destructive:
+    "border border-solid border-brand-red text-brand-red dark:text-white bg-transparent ease-[ease] hover:bg-brand-red hover:text-white hover:border-brand-red focus-visible:ring-brand-red/50",
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

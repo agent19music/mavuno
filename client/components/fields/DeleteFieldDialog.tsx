@@ -38,7 +38,8 @@ export function DeleteFieldDialog({
         </Button>
         <Button
           type="button"
-          className="text-red-600 dark:text-red-400"
+          variant="secondary"
+          className="border-brand-red bg-brand-red text-white hover:border-brand-red hover:bg-[oklch(0.43_0.19_27.3)] hover:text-white"
           disabled={busy}
           onClick={() => void onConfirm()}
         >
