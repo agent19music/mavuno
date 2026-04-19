@@ -15,19 +15,21 @@ import { displayUserName } from "@/types/models";
 export function Topbar() {
   const { user, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return document.documentElement.classList.contains("dark");
-  });
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const setTheme = (nextDark: boolean) => {
+    setIsDark(nextDark);
+    document.documentElement.classList.toggle("dark", nextDark);
     try {
-      localStorage.setItem("mavuno-theme", isDark ? "dark" : "light");
+      localStorage.setItem("mavuno-theme", nextDark ? "dark" : "light");
     } catch {
       /* ignore */
     }
-  }, [isDark]);
+  };
 
   // Global Cmd/Ctrl+K shortcut. Don't intercept while typing into inputs.
   useEffect(() => {
@@ -62,6 +64,7 @@ export function Topbar() {
               width={28}
               height={28}
               className="block dark:hidden"
+              style={{ width: "auto", height: "auto" }}
               priority
             />
             <Image
@@ -70,6 +73,7 @@ export function Topbar() {
               width={28}
               height={28}
               className="hidden dark:block"
+              style={{ width: "auto", height: "auto" }}
               priority
             />
             <span className="text-sm font-semibold tracking-tight text-[var(--brand-olive)] dark:text-[var(--brand-sand)]">
@@ -126,7 +130,7 @@ export function Topbar() {
                   <div className="p-1">
                     <button
                       type="button"
-                      onClick={() => setIsDark((v) => !v)}
+                      onClick={() => setTheme(!isDark)}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-hover-surface"
                     >
                       {isDark ? <Sun size={18} /> : <Moon size={18} />}
