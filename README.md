@@ -11,6 +11,7 @@ docker compose up --build
 - Client: http://localhost:3000
 - API:    http://localhost:8000/mavuno/api/
 - Health: http://localhost:8000/mavuno/api/health/
+- **OpenAPI / Swagger:** http://localhost:8000/mavuno/api/docs/ (ReDoc: `/mavuno/api/redoc/`, raw schema: `/mavuno/api/schema/`)
 
 Hot reload works via bind mounts. Only rebuild when dependencies change.
 

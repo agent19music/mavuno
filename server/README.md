@@ -22,6 +22,14 @@ The API will be at `http://localhost:8000/mavuno/api/`.
 GET /mavuno/api/health/ -> { "status": "ok" }
 ```
 
+## API docs (OpenAPI 3 + Swagger UI)
+
+- **Swagger UI:** `/mavuno/api/docs/`
+- **ReDoc:** `/mavuno/api/redoc/`
+- **Schema (JSON):** `/mavuno/api/schema/`
+
+Powered by [drf-spectacular](https://github.com/tfranzel/drf-spectacular). Use **Authorize** in Swagger and paste a JWT `access` token (Bearer) for protected routes.
+
 ## Project structure
 
 - `core/` — Django project (settings, urls, wsgi/asgi)

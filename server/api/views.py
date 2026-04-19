@@ -4,6 +4,9 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import serializers as drf_serializers
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
@@ -31,13 +34,37 @@ from .serializers import (
 
 User = get_user_model()
 
+_health_ok = inline_serializer(name="HealthOk", fields={"status": drf_serializers.CharField()})
+_login_ok = inline_serializer(
+    name="LoginOk",
+    fields={
+        "access": drf_serializers.CharField(help_text="JWT access token"),
+        "user": UserSerializer(),
+    },
+)
+_refresh_ok = inline_serializer(
+    name="RefreshOk",
+    fields={"access": drf_serializers.CharField(help_text="New JWT access token")},
+)
 
+
+@extend_schema(responses={200: _health_ok}, tags=["meta"])
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def health(_request):
     return Response({"status": "ok"})
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Log in",
+    request=LoginSerializer,
+    responses={
+        200: _login_ok,
+        400: OpenApiTypes.OBJECT,
+        401: OpenApiTypes.OBJECT,
+    },
+)
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -66,6 +93,13 @@ class LoginView(APIView):
         return response
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Refresh access token",
+    request=None,
+    responses={200: _refresh_ok, 401: OpenApiTypes.OBJECT},
+    description="Reads refresh JWT from the `mavuno_refresh` httpOnly cookie.",
+)
 class RefreshView(APIView):
     permission_classes = [AllowAny]
 
@@ -91,6 +125,13 @@ class RefreshView(APIView):
         return response
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Log out",
+    request=None,
+    responses={204: None},
+    description="Blacklists the refresh token from the cookie and clears the cookie.",
+)
 class LogoutView(APIView):
     permission_classes = [AllowAny]
 
@@ -107,6 +148,13 @@ class LogoutView(APIView):
         return response
 
 
+@extend_schema(
+    tags=["auth"],
+    summary="Register user",
+    request=RegisterSerializer,
+    responses={201: UserSerializer, 403: OpenApiTypes.OBJECT},
+    description="First user in an empty database becomes admin; later signups require an authenticated admin.",
+)
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -127,6 +175,7 @@ class RegisterView(APIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["auth"], summary="Current user", responses={200: UserSerializer})
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -134,6 +183,19 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="List field agents",
+        responses={200: UserSerializer(many=True)},
+        operation_id="agents_list",
+    ),
+    post=extend_schema(
+        summary="Create field agent",
+        request=AgentCreateSerializer,
+        responses={201: UserSerializer},
+        operation_id="agents_create",
+    ),
+)
 class AgentListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUserRole]
 
@@ -148,6 +210,19 @@ class AgentListCreateView(APIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="List fields",
+        responses={200: FieldSerializer(many=True)},
+        operation_id="field_collection_list",
+    ),
+    post=extend_schema(
+        summary="Create field (admin)",
+        request=FieldSerializer,
+        responses={201: FieldSerializer, 403: OpenApiTypes.OBJECT},
+        operation_id="field_collection_create",
+    ),
+)
 class FieldListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -170,6 +245,25 @@ class FieldListCreateView(APIView):
         return Response(FieldSerializer(field).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Retrieve field",
+        responses={200: FieldSerializer},
+        operation_id="field_item_retrieve",
+    ),
+    put=extend_schema(
+        summary="Update field",
+        request=FieldSerializer,
+        responses={200: FieldSerializer, 403: OpenApiTypes.OBJECT},
+        operation_id="field_item_update",
+        description="Admins may send the full `FieldSerializer` body; agents send only stage/notes (enforced server-side).",
+    ),
+    delete=extend_schema(
+        summary="Delete field (admin)",
+        responses={204: None, 403: OpenApiTypes.OBJECT},
+        operation_id="field_item_destroy",
+    ),
+)
 class FieldDetailView(APIView):
     permission_classes = [IsAuthenticated, CanViewField]
 
@@ -211,6 +305,11 @@ class FieldDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(
+    tags=["fields"],
+    summary="List updates for a field",
+    responses={200: FieldUpdateSerializer(many=True)},
+)
 class FieldUpdatesView(APIView):
     permission_classes = [IsAuthenticated, CanViewFieldUpdates]
 
@@ -222,6 +321,20 @@ class FieldUpdatesView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    tags=["fields"],
+    summary="Recent updates feed",
+    responses={200: FieldUpdateSerializer(many=True)},
+    parameters=[
+        OpenApiParameter(
+            name="limit",
+            type=int,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Max updates to return (1–100).",
+        ),
+    ],
+)
 class UpdatesFeedView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -238,6 +351,11 @@ class UpdatesFeedView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    tags=["dashboard"],
+    summary="Admin dashboard aggregates",
+    responses={200: AdminDashboardSerializer},
+)
 class AdminDashboardView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUserRole]
 
@@ -257,6 +375,11 @@ class AdminDashboardView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    tags=["dashboard"],
+    summary="Agent dashboard aggregates",
+    responses={200: AgentDashboardSerializer, 403: OpenApiTypes.OBJECT},
+)
 class AgentDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
