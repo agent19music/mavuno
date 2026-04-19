@@ -9,8 +9,8 @@ docker compose up --build
 ```
 
 - Client: http://localhost:3000
-- API:    http://localhost:8000/api/
-- Health: http://localhost:8000/api/health/
+- API:    http://localhost:8000/mavuno/api/
+- Health: http://localhost:8000/mavuno/api/health/
 
 Hot reload works via bind mounts. Only rebuild when dependencies change.
 
@@ -36,7 +36,7 @@ docker compose exec client pnpm add <pkg>
 
 - **JWT vs session:** SimpleJWT with refresh rotation + blacklist fits a SPA talking to a separate API origin; no CSRF on API routes (access token is not auto-sent by the browser).
 - **Field ↔ agents:** Many-to-many; admins assign multiple agents per field.
-- **No public signup:** First `POST /api/auth/register` bootstraps an admin; further users are created by admins (`POST /api/agents` or register while authenticated as admin).
+- **No public signup:** First `POST /mavuno/api/auth/register` bootstraps an admin; further users are created by admins (`POST /mavuno/api/agents` or register while authenticated as admin).
 
 **Computed field status (`active` / `at_risk` / `completed`):**
 

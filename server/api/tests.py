@@ -50,7 +50,7 @@ class FieldModelTests(APITestCase):
 class AuthApiTests(APITestCase):
     def test_register_first_user_defaults_to_admin(self):
         response = self.client.post(
-            "/api/auth/register",
+            "/mavuno/api/auth/register",
             {
                 "username": "root",
                 "email": "root@example.com",
@@ -69,7 +69,7 @@ class AuthApiTests(APITestCase):
             role=User.Role.ADMIN,
         )
         login_response = self.client.post(
-            "/api/auth/login",
+            "/mavuno/api/auth/login",
             {"email": "admin@example.com", "password": "Password123!"},
             format="json",
         )
@@ -78,7 +78,7 @@ class AuthApiTests(APITestCase):
         self.assertEqual(login_response.data["user"]["id"], user.id)
 
         access = login_response.data["access"]
-        me_response = self.client.get("/api/auth/me", HTTP_AUTHORIZATION=f"Bearer {access}")
+        me_response = self.client.get("/mavuno/api/auth/me", HTTP_AUTHORIZATION=f"Bearer {access}")
         self.assertEqual(me_response.status_code, status.HTTP_200_OK)
         self.assertEqual(me_response.data["email"], "admin@example.com")
 
@@ -90,7 +90,7 @@ class AuthApiTests(APITestCase):
             role=User.Role.ADMIN,
         )
         response = self.client.post(
-            "/api/auth/login",
+            "/mavuno/api/auth/login",
             {"email": "admin@example.com", "password": "nope"},
             format="json",
         )
@@ -99,7 +99,7 @@ class AuthApiTests(APITestCase):
 
     def test_login_with_unknown_email_returns_401_with_clean_detail(self):
         response = self.client.post(
-            "/api/auth/login",
+            "/mavuno/api/auth/login",
             {"email": "ghost@example.com", "password": "whatever"},
             format="json",
         )
@@ -108,7 +108,7 @@ class AuthApiTests(APITestCase):
 
     def test_login_with_malformed_payload_still_returns_400(self):
         response = self.client.post(
-            "/api/auth/login",
+            "/mavuno/api/auth/login",
             {"email": "not-an-email", "password": "x"},
             format="json",
         )
@@ -123,12 +123,12 @@ class AuthApiTests(APITestCase):
             role=User.Role.ADMIN,
         )
         login_response = self.client.post(
-            "/api/auth/login",
+            "/mavuno/api/auth/login",
             {"email": "admin@example.com", "password": "Password123!"},
             format="json",
         )
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-        refresh_response = self.client.post("/api/auth/refresh")
+        refresh_response = self.client.post("/mavuno/api/auth/refresh")
         self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
         self.assertIn("access", refresh_response.data)
 
@@ -140,12 +140,12 @@ class AuthApiTests(APITestCase):
             role=User.Role.ADMIN,
         )
         login_response = self.client.post(
-            "/api/auth/login",
+            "/mavuno/api/auth/login",
             {"email": "admin@example.com", "password": "Password123!"},
             format="json",
         )
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-        logout_response = self.client.post("/api/auth/logout")
+        logout_response = self.client.post("/mavuno/api/auth/logout")
         self.assertEqual(logout_response.status_code, status.HTTP_204_NO_CONTENT)
 
 
@@ -185,7 +185,7 @@ class FieldPermissionsTests(APITestCase):
             planting_date=timezone.now().date(),
         )
         self.client.force_authenticate(user=self.agent)
-        response = self.client.get("/api/fields")
+        response = self.client.get("/mavuno/api/fields")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         field_ids = {item["id"] for item in response.data}
         self.assertIn(self.field.id, field_ids)
@@ -194,7 +194,7 @@ class FieldPermissionsTests(APITestCase):
     def test_agent_cannot_modify_unassigned_field(self):
         self.client.force_authenticate(user=self.other_agent)
         response = self.client.put(
-            f"/api/fields/{self.field.id}",
+            f"/mavuno/api/fields/{self.field.id}",
             {"current_stage": Field.Stage.GROWING, "notes": "Attempt"},
             format="json",
         )
@@ -203,7 +203,7 @@ class FieldPermissionsTests(APITestCase):
     def test_agent_update_creates_field_update_record(self):
         self.client.force_authenticate(user=self.agent)
         response = self.client.put(
-            f"/api/fields/{self.field.id}",
+            f"/mavuno/api/fields/{self.field.id}",
             {"current_stage": Field.Stage.GROWING, "notes": "Progressed"},
             format="json",
         )
@@ -219,7 +219,7 @@ class FieldPermissionsTests(APITestCase):
             planting_date=timezone.now().date(),
         )
         self.client.force_authenticate(user=self.admin)
-        response = self.client.delete(f"/api/fields/{to_delete.id}")
+        response = self.client.delete(f"/mavuno/api/fields/{to_delete.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Field.objects.filter(pk=to_delete.id).exists())
 
@@ -241,7 +241,7 @@ class AgentsApiTests(APITestCase):
 
     def test_agents_list_admin_only(self):
         self.client.force_authenticate(user=self.admin)
-        response = self.client.get("/api/agents")
+        response = self.client.get("/mavuno/api/agents")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 1)
 
@@ -253,7 +253,7 @@ class AgentsApiTests(APITestCase):
             role=User.Role.AGENT,
         )
         self.client.force_authenticate(user=agent)
-        response = self.client.get("/api/agents")
+        response = self.client.get("/mavuno/api/agents")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
@@ -287,7 +287,7 @@ class UpdatesFeedTests(APITestCase):
 
     def test_admin_sees_all_updates(self):
         self.client.force_authenticate(user=self.admin)
-        response = self.client.get("/api/updates?limit=10")
+        response = self.client.get("/mavuno/api/updates?limit=10")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 1)
 
@@ -305,7 +305,7 @@ class UpdatesFeedTests(APITestCase):
             agent=other,
         )
         self.client.force_authenticate(user=self.agent)
-        response = self.client.get("/api/updates?limit=10")
+        response = self.client.get("/mavuno/api/updates?limit=10")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for item in response.data:
             self.assertEqual(item["agent"]["id"], self.agent.id)
@@ -341,14 +341,14 @@ class DashboardTests(APITestCase):
 
     def test_admin_dashboard_endpoint(self):
         self.client.force_authenticate(user=self.admin)
-        response = self.client.get("/api/dashboard/admin")
+        response = self.client.get("/mavuno/api/dashboard/admin")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("total_fields", response.data)
         self.assertIn("status_breakdown", response.data)
 
     def test_agent_dashboard_endpoint(self):
         self.client.force_authenticate(user=self.agent)
-        response = self.client.get("/api/dashboard/agent")
+        response = self.client.get("/mavuno/api/dashboard/agent")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["assigned_fields"], 1)
 

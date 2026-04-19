@@ -65,8 +65,8 @@ export async function apiRequest<T>(path: string, init: RequestOpts = {}): Promi
     credentials: "include",
   });
 
-  if (res.status === 401 && !skipAuth && path !== "/api/auth/refresh") {
-    const refreshRes = await fetch(`${base}/api/auth/refresh`, {
+  if (res.status === 401 && !skipAuth && path !== "/mavuno/api/auth/refresh") {
+    const refreshRes = await fetch(`${base}/mavuno/api/auth/refresh`, {
       method: "POST",
       credentials: "include",
     });
@@ -95,45 +95,45 @@ export async function apiRequest<T>(path: string, init: RequestOpts = {}): Promi
 
 export const api = {
   login: (email: string, password: string) =>
-    apiRequest<{ access: string; user: ApiUser }>("/api/auth/login", {
+    apiRequest<{ access: string; user: ApiUser }>("/mavuno/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
       skipAuth: true,
     }),
 
   refresh: () =>
-    apiRequest<{ access: string }>("/api/auth/refresh", {
+    apiRequest<{ access: string }>("/mavuno/api/auth/refresh", {
       method: "POST",
       skipAuth: true,
     }),
 
   logout: () =>
-    apiRequest<void>("/api/auth/logout", {
+    apiRequest<void>("/mavuno/api/auth/logout", {
       method: "POST",
       skipAuth: true,
     }),
 
-  me: () => apiRequest<ApiUser>("/api/auth/me"),
+  me: () => apiRequest<ApiUser>("/mavuno/api/auth/me"),
 
-  fields: () => apiRequest<Field[]>("/api/fields"),
+  fields: () => apiRequest<Field[]>("/mavuno/api/fields"),
 
-  field: (id: number) => apiRequest<Field>(`/api/fields/${id}`),
+  field: (id: number) => apiRequest<Field>(`/mavuno/api/fields/${id}`),
 
   updateField: (id: number, body: Partial<Pick<Field, "name" | "crop_type" | "planting_date" | "current_stage" | "notes">> & { assigned_agent_ids?: number[] }) =>
-    apiRequest<Field>(`/api/fields/${id}`, {
+    apiRequest<Field>(`/mavuno/api/fields/${id}`, {
       method: "PUT",
       body: JSON.stringify(body),
     }),
 
   deleteField: (id: number) =>
-    apiRequest<void>(`/api/fields/${id}`, {
+    apiRequest<void>(`/mavuno/api/fields/${id}`, {
       method: "DELETE",
     }),
 
-  fieldUpdates: (id: number) => apiRequest<FieldUpdate[]>(`/api/fields/${id}/updates`),
+  fieldUpdates: (id: number) => apiRequest<FieldUpdate[]>(`/mavuno/api/fields/${id}/updates`),
 
   updates: (limit = 20) =>
-    apiRequest<FieldUpdate[]>(`/api/updates?limit=${encodeURIComponent(String(limit))}`),
+    apiRequest<FieldUpdate[]>(`/mavuno/api/updates?limit=${encodeURIComponent(String(limit))}`),
 
   dashboardAdmin: () =>
     apiRequest<{
@@ -141,19 +141,19 @@ export const api = {
       status_breakdown: Record<string, number>;
       total_agents: number;
       recent_updates: number;
-    }>("/api/dashboard/admin"),
+    }>("/mavuno/api/dashboard/admin"),
 
   dashboardAgent: () =>
     apiRequest<{
       assigned_fields: number;
       status_breakdown: Record<string, number>;
       my_recent_updates: number;
-    }>("/api/dashboard/agent"),
+    }>("/mavuno/api/dashboard/agent"),
 
-  agents: () => apiRequest<ApiUser[]>("/api/agents"),
+  agents: () => apiRequest<ApiUser[]>("/mavuno/api/agents"),
 
   createAgent: (body: { username: string; email: string; password: string; first_name?: string; last_name?: string }) =>
-    apiRequest<ApiUser>("/api/agents", {
+    apiRequest<ApiUser>("/mavuno/api/agents", {
       method: "POST",
       body: JSON.stringify(body),
     }),
