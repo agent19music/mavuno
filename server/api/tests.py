@@ -277,6 +277,81 @@ class AgentsApiTests(APITestCase):
         response = self.client.get("/mavuno/api/agents")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_admin_can_update_agent_profile(self):
+        agent = User.objects.create_user(
+            username="agent-to-edit",
+            email="before@example.com",
+            password="Password123!",
+            first_name="Before",
+            last_name="Name",
+            role=User.Role.AGENT,
+        )
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.put(
+            f"/mavuno/api/agents/{agent.id}",
+            {
+                "email": "after@example.com",
+                "first_name": "After",
+                "last_name": "Updated",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        agent.refresh_from_db()
+        self.assertEqual(agent.email, "after@example.com")
+        self.assertEqual(agent.first_name, "After")
+        self.assertEqual(agent.last_name, "Updated")
+
+    def test_agent_update_forbidden_for_non_admin(self):
+        admin_created_agent = User.objects.create_user(
+            username="agent-z",
+            email="agent-z@example.com",
+            password="Password123!",
+            role=User.Role.AGENT,
+        )
+        non_admin = User.objects.create_user(
+            username="agentx",
+            email="agentx@example.com",
+            password="Password123!",
+            role=User.Role.AGENT,
+        )
+        self.client.force_authenticate(user=non_admin)
+        response = self.client.put(
+            f"/mavuno/api/agents/{admin_created_agent.id}",
+            {"first_name": "Nope"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_can_delete_agent(self):
+        agent = User.objects.create_user(
+            username="to-delete",
+            email="to-delete@example.com",
+            password="Password123!",
+            role=User.Role.AGENT,
+        )
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.delete(f"/mavuno/api/agents/{agent.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(User.objects.filter(pk=agent.id).exists())
+
+    def test_agent_delete_forbidden_for_non_admin(self):
+        target = User.objects.create_user(
+            username="target-agent",
+            email="target-agent@example.com",
+            password="Password123!",
+            role=User.Role.AGENT,
+        )
+        non_admin = User.objects.create_user(
+            username="non-admin-agent",
+            email="non-admin-agent@example.com",
+            password="Password123!",
+            role=User.Role.AGENT,
+        )
+        self.client.force_authenticate(user=non_admin)
+        response = self.client.delete(f"/mavuno/api/agents/{target.id}")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class UpdatesFeedTests(APITestCase):
     def setUp(self):
