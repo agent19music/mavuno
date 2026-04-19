@@ -14,12 +14,12 @@ python manage.py migrate
 python manage.py runserver 8000
 ```
 
-The API will be at `http://localhost:8000/api/`.
+The API will be at `http://localhost:8000/mavuno/api/`.
 
 ## Health check
 
 ```
-GET /api/health/ -> { "status": "ok" }
+GET /mavuno/api/health/ -> { "status": "ok" }
 ```
 
 ## Project structure
