@@ -15,9 +15,9 @@ export const metadata: Metadata = {
   title: "Mavuno Farm",
   description: "Farm management UI scaffold",
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
+    icon: "/mavuno-favicon.ico",
+    shortcut: "/mavuno-favicon.ico",
+    apple: "/mavuno-favicon.ico",
   },
 };
 

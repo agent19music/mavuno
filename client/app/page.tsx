@@ -7,19 +7,21 @@ import { Moon, Sun } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip-card";
 
 export default function Home() {
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return document.documentElement.classList.contains("dark");
-  });
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const setTheme = (nextDark: boolean) => {
+    setIsDark(nextDark);
+    document.documentElement.classList.toggle("dark", nextDark);
     try {
-      localStorage.setItem("mavuno-theme", isDark ? "dark" : "light");
+      localStorage.setItem("mavuno-theme", nextDark ? "dark" : "light");
     } catch {
       /* ignore */
     }
-  }, [isDark]);
+  };
 
   return (
     <div className="flex h-svh min-h-screen items-center justify-center overflow-hidden bg-background p-4 font-sans sm:p-6">
@@ -36,6 +38,7 @@ export default function Home() {
                 width={44}
                 height={44}
                 className="block shrink-0 dark:hidden"
+                style={{ width: "auto", height: "auto" }}
                 priority
               />
               <Image
@@ -44,12 +47,13 @@ export default function Home() {
                 width={44}
                 height={44}
                 className="hidden shrink-0 dark:block"
+                style={{ width: "auto", height: "auto" }}
                 priority
               />
             </div>
             <button
               type="button"
-              onClick={() => setIsDark((v) => !v)}
+              onClick={() => setTheme(!isDark)}
               aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-black/[.08] text-zinc-700 outline-none ring-foreground/60 transition-colors duration-200 ease-out hover:bg-hover-surface focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:border-white/[.08] dark:text-zinc-200 dark:hover:bg-hover-surface sm:size-10"
             >

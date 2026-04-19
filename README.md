@@ -33,6 +33,25 @@ docker compose exec client pnpm add <pkg>
 
 **Roles:** Admin (coordinator) and Field Agent. **Auth:** JWT access token in memory + refresh token in `httpOnly` cookie (`mavuno_refresh`, path `/`) so the Next.js app and API can share localhost across ports and middleware can gate `/admin/*` and `/agent/*`.
 
+#### Assumptions (server setup)
+
+1. **Product rename is allowed.** This implementation uses `mavuno` as the product/project name in place of "SmartSeason Field Monitoring System".
+2. **Two-role model only.** Authorization is scoped to `admin` and `agent`; no additional role hierarchy is implemented.
+3. **Admin-managed access.** No public signup after bootstrap; admins create/invite agent users.
+4. **JWT-first API auth.** Access tokens are sent via `Authorization: Bearer`; refresh uses an `httpOnly` cookie and token rotation/blacklist.
+5. **Cross-origin client/API in production.** Client and server can live on separate Cloud Run service URLs; CORS/CSRF trusted origins are configured from deploy-time variables.
+6. **Cloud Run + Cloud SQL are the target runtime.** Dockerized services, migrations on startup, and GitHub Actions deploy via Workload Identity Federation.
+7. **Single-instance realtime assumption (current).** SSE fan-out uses in-process pub/sub; horizontal scale requires shared pub/sub (e.g., Redis or Postgres `LISTEN/NOTIFY`).
+8. **PostgreSQL is the backing store.** `DATABASE_URL` points to Cloud SQL Postgres in production.
+
+#### Non-goals (current scope)
+
+- **No multi-tenant org model.** The system assumes a single organization/workspace.
+- **No self-serve user lifecycle.** Password reset, email verification, and self-signup flows are out of scope.
+- **No distributed realtime bus yet.** SSE is implemented for single-instance fan-out; shared broker setup is deferred.
+- **No long-running migration orchestration.** Migrations run at container startup; dedicated migration jobs are deferred.
+- **No advanced compliance/audit module.** Full audit trails, retention policies, and regulatory controls are not implemented.
+
 **Design decisions (short):**
 
 - **JWT vs session:** SimpleJWT with refresh rotation + blacklist fits a SPA talking to a separate API origin; no CSRF on API routes (access token is not auto-sent by the browser).

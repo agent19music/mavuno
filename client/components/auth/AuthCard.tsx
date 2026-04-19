@@ -20,6 +20,7 @@ export function AuthCard({
           width={54}
           height={54}
           className="block dark:hidden"
+          style={{ width: "auto", height: "auto" }}
         />
         <Image
           src="/assets/mavuno-logo-dark-nobg.webp"
@@ -27,6 +28,7 @@ export function AuthCard({
           width={54}
           height={54}
           className="hidden dark:block"
+          style={{ width: "auto", height: "auto" }}
         />
       </div>
       <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
