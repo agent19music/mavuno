@@ -51,6 +51,14 @@ class AgentCreateSerializer(serializers.ModelSerializer):
         return user
 
 
+class AgentUpdateSerializer(serializers.ModelSerializer):
+    """Admin-only: update an existing field agent profile."""
+
+    class Meta:
+        model = User
+        fields = ("username", "email", "first_name", "last_name")
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)

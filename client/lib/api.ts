@@ -182,6 +182,17 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  updateAgent: (id: number, body: Partial<Pick<ApiUser, "username" | "email" | "first_name" | "last_name">>) =>
+    apiRequest<ApiUser>(`/mavuno/api/agents/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+
+  deleteAgent: (id: number) =>
+    apiRequest<void>(`/mavuno/api/agents/${id}`, {
+      method: "DELETE",
+    }),
+
   notifications: () => apiRequest<AppNotification[]>("/mavuno/api/notifications"),
 
   markNotificationsRead: (ids?: number[]) =>

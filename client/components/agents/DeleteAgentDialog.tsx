@@ -3,20 +3,20 @@
 import { AppModal } from "@/components/ui/AppModal";
 import { Button } from "@/components/ui/Button";
 
-export function DeleteFieldDialog({
+export function DeleteAgentDialog({
   open,
   onOpenChange,
-  fieldName,
+  agentName,
+  assignedFieldsCount,
   updatesCount,
-  agentsCount,
   onConfirm,
   busy,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fieldName: string;
+  agentName: string;
+  assignedFieldsCount: number;
   updatesCount: number;
-  agentsCount: number;
   onConfirm: () => void | Promise<void>;
   busy?: boolean;
 }) {
@@ -24,11 +24,11 @@ export function DeleteFieldDialog({
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
-      title={`Delete ${fieldName}?`}
+      title={`Delete ${agentName}?`}
       description={
         <>
-          Removes the field, {updatesCount} update{updatesCount === 1 ? "" : "s"}, and unassigns{" "}
-          {agentsCount} agent{agentsCount === 1 ? "" : "s"}. Cannot be undone.
+          Removes the agent, unassigns {assignedFieldsCount} field{assignedFieldsCount === 1 ? "" : "s"}, and
+          deletes {updatesCount} update{updatesCount === 1 ? "" : "s"} they created. Cannot be undone.
         </>
       }
     >
@@ -49,7 +49,7 @@ export function DeleteFieldDialog({
           disabled={busy}
           onClick={() => void onConfirm()}
         >
-          {busy ? "Deleting…" : "Delete field"}
+          {busy ? "Deleting…" : "Delete agent"}
         </Button>
       </div>
     </AppModal>

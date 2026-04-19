@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     AdminDashboardView,
+    AgentDetailView,
     AgentDashboardView,
     AgentListCreateView,
     EventStreamView,
@@ -28,6 +29,7 @@ urlpatterns = [
     path("auth/register", RegisterView.as_view(), name="auth-register"),
     path("auth/me", MeView.as_view(), name="auth-me"),
     path("agents", AgentListCreateView.as_view(), name="agent-list-create"),
+    path("agents/<int:pk>", AgentDetailView.as_view(), name="agent-detail"),
     path("fields", FieldListCreateView.as_view(), name="field-list-create"),
     path("fields/merge", FieldMergeView.as_view(), name="field-merge"),
     path("fields/<int:pk>", FieldDetailView.as_view(), name="field-detail"),

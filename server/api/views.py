@@ -30,6 +30,7 @@ from .serializers import (
     AdminDashboardSerializer,
     AgentCreateSerializer,
     AgentDashboardSerializer,
+    AgentUpdateSerializer,
     FieldAgentUpdateSerializer,
     FieldMergeSerializer,
     FieldSerializer,
@@ -216,6 +217,46 @@ class AgentListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Retrieve field agent",
+        responses={200: UserSerializer},
+        operation_id="agents_retrieve",
+    ),
+    put=extend_schema(
+        summary="Update field agent",
+        request=AgentUpdateSerializer,
+        responses={200: UserSerializer},
+        operation_id="agents_update",
+    ),
+    delete=extend_schema(
+        summary="Delete field agent",
+        responses={204: None},
+        operation_id="agents_delete",
+    ),
+)
+class AgentDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def get_object(self, pk):
+        return get_object_or_404(User, pk=pk, role=User.Role.AGENT)
+
+    def get(self, request, pk):
+        return Response(UserSerializer(self.get_object(pk)).data)
+
+    def put(self, request, pk):
+        agent = self.get_object(pk)
+        serializer = AgentUpdateSerializer(agent, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(agent).data)
+
+    def delete(self, request, pk):
+        agent = self.get_object(pk)
+        agent.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema_view(
