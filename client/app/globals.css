@@ -222,7 +222,7 @@ body {
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: oklch(0.385 0 0);  /*       #4a4a4a — explicit dividers */
   --hover-surface: oklch(0.325 0 0);  /* L2    #3a3a3a — hover wash on L1 */
-  --card: #2a2a2a;                    /* Card — one step BENEATH L1 in dark mode (settled in), paired with --shadow-xs. Hex literal for parity with light token. */
+  --card: #313131;                    /* Card — one step ABOVE L1 in dark mode (lifts off the page), sits between --surface (#2d) and --hover-surface (#3a). Hex literal for parity with light token. */
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.325 0 0);        /* L2    #3a3a3a — popovers, modals, command palette */
   --popover-foreground: oklch(0.985 0 0);
