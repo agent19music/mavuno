@@ -1,4 +1,4 @@
-import type { ApiUser, Field, FieldUpdate } from "@/types/models";
+import type { ApiUser, AppNotification, Field, FieldStage, FieldUpdate } from "@/types/models";
 
 function apiBase(): string {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
@@ -117,6 +117,30 @@ export const api = {
 
   fields: () => apiRequest<Field[]>("/mavuno/api/fields"),
 
+  createField: (
+    body: Pick<Field, "name" | "crop_type" | "planting_date" | "current_stage" | "notes"> & {
+      assigned_agent_ids?: number[];
+    }
+  ) =>
+    apiRequest<Field>("/mavuno/api/fields", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  mergeFields: (body: {
+    source_ids: number[];
+    name: string;
+    crop_type: string;
+    planting_date: string;
+    current_stage: FieldStage;
+    notes?: string;
+    assigned_agent_ids?: number[];
+  }) =>
+    apiRequest<Field>("/mavuno/api/fields/merge", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
   field: (id: number) => apiRequest<Field>(`/mavuno/api/fields/${id}`),
 
   updateField: (id: number, body: Partial<Pick<Field, "name" | "crop_type" | "planting_date" | "current_stage" | "notes">> & { assigned_agent_ids?: number[] }) =>
@@ -156,5 +180,13 @@ export const api = {
     apiRequest<ApiUser>("/mavuno/api/agents", {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+
+  notifications: () => apiRequest<AppNotification[]>("/mavuno/api/notifications"),
+
+  markNotificationsRead: (ids?: number[]) =>
+    apiRequest<void>("/mavuno/api/notifications/mark-read", {
+      method: "POST",
+      body: JSON.stringify(ids?.length ? { ids } : {}),
     }),
 };

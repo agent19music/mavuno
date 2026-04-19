@@ -132,3 +132,51 @@ class FieldUpdate(models.Model):
         indexes = [
             models.Index(fields=["timestamp"]),
         ]
+
+
+class Notification(models.Model):
+    """In-app notification (persisted); SSE pushes mirror rows to connected clients."""
+
+    class Kind(models.TextChoices):
+        FIELD_DELETED = "field_deleted", "Field deleted"
+        FIELD_MERGED_AWAY = "field_merged_away", "Field merged away"
+
+    recipient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    kind = models.CharField(max_length=40, choices=Kind.choices, db_index=True)
+    title = models.CharField(max_length=255)
+    body = models.TextField(blank=True)
+    # Survives when the Field row is gone (delete / merge source removal).
+    related_field_id = models.IntegerField(null=True, blank=True)
+    target_field = models.ForeignKey(
+        Field,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="merge_notifications",
+    )
+    is_read = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["recipient", "-created_at"]),
+        ]
+
+
+NOTIFICATION_RETENTION = 50
+
+
+def trim_notifications_for_recipient(recipient_id: int) -> None:
+    """Keep at most NOTIFICATION_RETENTION rows per recipient (newest first)."""
+    ids = list(
+        Notification.objects.filter(recipient_id=recipient_id)
+        .order_by("-created_at")
+        .values_list("pk", flat=True)[NOTIFICATION_RETENTION:]
+    )
+    if ids:
+        Notification.objects.filter(pk__in=ids).delete()

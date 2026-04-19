@@ -1,7 +1,11 @@
+import json
 from datetime import timedelta
+from queue import Empty
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Count
+from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
@@ -11,6 +15,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.renderers import BaseRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
@@ -18,16 +23,19 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .cookies import REFRESH_COOKIE_NAME, delete_refresh_cookie, set_refresh_cookie
-from .models import Field, FieldUpdate
+from . import pubsub
+from .models import Field, FieldUpdate, Notification, trim_notifications_for_recipient
 from .permissions import CanViewField, CanViewFieldUpdates, IsAdminUserRole
 from .serializers import (
     AdminDashboardSerializer,
     AgentCreateSerializer,
     AgentDashboardSerializer,
     FieldAgentUpdateSerializer,
+    FieldMergeSerializer,
     FieldSerializer,
     FieldUpdateSerializer,
     LoginSerializer,
+    NotificationSerializer,
     RegisterSerializer,
     UserSerializer,
 )
@@ -301,6 +309,18 @@ class FieldDetailView(APIView):
         if not request.user.is_admin:
             return Response({"detail": "Admin role required."}, status=status.HTTP_403_FORBIDDEN)
         field = get_object_or_404(Field.objects.prefetch_related("assigned_agents"), pk=pk)
+        name = field.name
+        field_pk = field.pk
+        agents = list(field.assigned_agents.all())
+        for agent in agents:
+            Notification.objects.create(
+                recipient=agent,
+                kind=Notification.Kind.FIELD_DELETED,
+                title=f'Field "{name}" was removed',
+                body="You are no longer assigned to this field.",
+                related_field_id=field_pk,
+            )
+            trim_notifications_for_recipient(agent.id)
         field.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -400,3 +420,158 @@ class AgentDashboardView(APIView):
         serializer = AgentDashboardSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["fields"],
+    summary="Merge fields into a new field (admin)",
+    request=FieldMergeSerializer,
+    responses={201: FieldSerializer, 400: OpenApiTypes.OBJECT, 403: OpenApiTypes.OBJECT},
+)
+class FieldMergeView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+    def post(self, request):
+        serializer = FieldMergeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        source_ids = serializer.validated_data["source_ids"]
+
+        with transaction.atomic():
+            sources = list(Field.objects.filter(pk__in=source_ids).prefetch_related("assigned_agents"))
+            found_ids = {f.id for f in sources}
+            missing = set(source_ids) - found_ids
+            if missing:
+                raise ValidationError({"source_ids": f"Unknown field ids: {sorted(missing)}"})
+
+            new_field = Field.objects.create(
+                name=serializer.validated_data["name"],
+                crop_type=serializer.validated_data["crop_type"],
+                planting_date=serializer.validated_data["planting_date"],
+                current_stage=serializer.validated_data["current_stage"],
+                notes=serializer.validated_data.get("notes") or "",
+            )
+
+            agent_ids = set(serializer.validated_data.get("assigned_agent_ids") or [])
+            for s in sources:
+                for a in s.assigned_agents.all():
+                    agent_ids.add(a.id)
+            agents = User.objects.filter(id__in=agent_ids, role=User.Role.AGENT)
+            new_field.assigned_agents.set(agents)
+
+            FieldUpdate.objects.filter(field_id__in=source_ids).update(field=new_field)
+
+            for s in sources:
+                for agent in s.assigned_agents.all():
+                    if agent.id == request.user.id:
+                        continue
+                    Notification.objects.create(
+                        recipient=agent,
+                        kind=Notification.Kind.FIELD_MERGED_AWAY,
+                        title=f'Field "{s.name}" was merged',
+                        body=f'It is now part of "{new_field.name}".',
+                        related_field_id=s.id,
+                        target_field=new_field,
+                    )
+                    trim_notifications_for_recipient(agent.id)
+
+            Field.objects.filter(pk__in=source_ids).delete()
+            new_field.refresh_status(save=True)
+
+        new_field = Field.objects.prefetch_related("assigned_agents").get(pk=new_field.pk)
+        return Response(FieldSerializer(new_field).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    tags=["notifications"],
+    summary="List notifications (newest 50)",
+    responses={200: NotificationSerializer(many=True)},
+)
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = Notification.objects.filter(recipient=request.user).order_by("-created_at")[:50]
+        return Response(NotificationSerializer(qs, many=True).data)
+
+
+_mark_read = inline_serializer(
+    name="NotificationMarkRead",
+    fields={"ids": drf_serializers.ListField(child=drf_serializers.IntegerField(), required=False)},
+)
+
+
+@extend_schema(
+    tags=["notifications"],
+    summary="Mark notifications read",
+    request=_mark_read,
+    responses={204: None},
+    description="Omit `ids` (or send empty list) to mark all as read.",
+)
+class NotificationMarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        ids = request.data.get("ids")
+        qs = Notification.objects.filter(recipient=request.user)
+        if isinstance(ids, list) and len(ids) > 0:
+            qs = qs.filter(pk__in=ids)
+        qs.update(is_read=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EventStreamRenderer(BaseRenderer):
+    """Pass-through renderer so DRF's content negotiation accepts `Accept: text/event-stream`.
+
+    The view returns a `StreamingHttpResponse` directly, so this `render` method is never invoked
+    for the success path; it exists so error/auth responses can still be negotiated without
+    crashing `perform_content_negotiation(force=True)` (which does `renderers[0]`).
+    """
+
+    media_type = "text/event-stream"
+    format = "txt"
+    charset = "utf-8"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        if data is None:
+            return b""
+        if isinstance(data, (bytes, bytearray)):
+            return bytes(data)
+        if isinstance(data, str):
+            return data.encode(self.charset)
+        return json.dumps(data).encode(self.charset)
+
+
+@extend_schema(
+    tags=["events"],
+    summary="Server-sent events stream (authenticated)",
+    responses={200: OpenApiTypes.OBJECT},
+    description="Long-lived `text/event-stream`. Sends `data: {json}` with type `notification` on new rows.",
+)
+class EventStreamView(APIView):
+    """SSE endpoint. Uses a custom renderer that advertises `text/event-stream` so DRF's
+    content negotiation passes for both the streaming success path and any error responses
+    (401 / 403) generated by the auth layer."""
+
+    permission_classes = [IsAuthenticated]
+    renderer_classes = [EventStreamRenderer]
+
+    def get(self, request):
+        user = request.user
+
+        def event_generator():
+            q = pubsub.subscribe(user.id)
+            try:
+                while True:
+                    try:
+                        event = q.get(timeout=15)
+                    except Empty:
+                        yield ": keepalive\n\n"
+                        continue
+                    yield f"data: {json.dumps(event)}\n\n"
+            finally:
+                pubsub.unsubscribe(user.id, q)
+
+        response = StreamingHttpResponse(event_generator(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response

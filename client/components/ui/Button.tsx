@@ -26,8 +26,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-base font-medium transition-colors duration-[200ms] ease-[var(--ease-out)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           "disabled:pointer-events-none disabled:opacity-50",
-          // Emil-inspired press feedback, only for direct interaction.
-          "active:scale-[0.97] active:duration-[160ms]",
+          // Emil-inspired press feedback (DESIGN.md: no hover motion on buttons).
+          "motion-safe:active:scale-[0.97] motion-reduce:active:scale-100 active:duration-[160ms]",
           variantClasses[variant],
           className
         )}

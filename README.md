@@ -55,6 +55,17 @@ docker compose exec client pnpm add <pkg>
 
 **UI routes:** `/admin/...` and `/agent/...` (role layouts redirect if wrong role).
 
+### Field create / merge / delete + realtime notifications
+
+- **Merge is destructive.** Source fields are permanently deleted. All `FieldUpdate` rows from those sources are re-parented to the **new** field created by the merge so history stays attached to the surviving entity.
+- **Notification kinds are bounded.** Only `field_deleted` and `field_merged_away` create inbox rows + SSE pushes. Changing agent assignments alone does **not** notify (yet).
+- **In-process pub/sub.** SSE fan-out uses an in-memory `queue.Queue` per subscriber (`server/api/pubsub.py`). This matches a **single** Cloud Run instance per revision; horizontal scale-out needs Redis Pub/Sub, Postgres `LISTEN/NOTIFY`, or similar.
+- **Cloud Run + SSE.** Prefer `--cpu-boost`, `--no-cpu-throttling`, and `--timeout=3600` on the **server** service so `/mavuno/api/events/stream` is not cut off by the default short request deadline or CPU throttling between requests.
+- **Gunicorn + SSE.** Production image uses `gthread` with multiple threads so long-lived stream requests do not starve short API calls (`server/Dockerfile.prod`).
+- **SSE auth.** The browser client uses `fetch()` + `ReadableStream` with an `Authorization: Bearer …` header so the JWT is never placed in the query string (native `EventSource` is not used).
+- **Notifications are best-effort over SSE.** `GET /mavuno/api/notifications` is the source of truth; the client reconnects on visibility change and backs off on errors. Missed events while offline are recovered on next load.
+- **Retention.** At most **50** notifications per recipient are kept; older rows are deleted when new ones are written.
+
 ### How they talk to each other locally
 
 - Browser → `NEXT_PUBLIC_API_URL` = `http://localhost:8000`

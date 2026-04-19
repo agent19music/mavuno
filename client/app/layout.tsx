@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
+import Script from "next/script";
 import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
@@ -49,11 +50,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full antialiased ${manrope.variable}`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
+    <html
+      lang="en"
+      className={`h-full antialiased ${manrope.variable}`}
+      suppressHydrationWarning
+    >
       <body className="flex min-h-full flex-col">
+        <Script id="mavuno-theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
