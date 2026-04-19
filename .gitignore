@@ -19,8 +19,13 @@ node_modules/
 .pnpm-debug.log*
 npm-debug.log*
 client/.env
-.cursor/
 client/DESIGN.md
 # IDE
 .vscode/
 .idea/
+
+# Agent / AI tooling (local only; never commit)
+.cursor/
+.agents/
+.claude/
+skills-lock.json
